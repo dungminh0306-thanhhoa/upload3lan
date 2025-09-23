@@ -31,6 +31,9 @@ worksheet = spreadsheet.worksheet(selected_sheet)
 records = worksheet.get_all_records()
 df = pd.DataFrame(records)
 
+# Chuyển toàn bộ header về chữ thường để thao tác thống nhất
+df.columns = [c.lower() for c in df.columns]
+
 # --- 6. Hiển thị dữ liệu ---
 st.title("🔍 Quản lý dữ liệu Google Sheets")
 st.subheader(f"Sheet đang xem: **{selected_sheet}**")
@@ -70,8 +73,14 @@ with st.form("add_row_form"):
 
     if submitted:
         if len(df.columns) > 0:
-            # Chuẩn bị dòng dữ liệu mới, đủ số cột
-            new_row = [new_id, new_name, new_quantity] + [""] * (len(df.columns) - 3)
+            # Tạo dict dữ liệu mới
+            new_data = {
+                "id": new_id,
+                "name": new_name,
+                "quantity": new_quantity
+            }
+            # Tạo dòng mới đúng thứ tự cột hiện có
+            new_row = [new_data.get(col, "") for col in df.columns]
             worksheet.append_row(new_row)
             st.success("✅ Đã thêm dữ liệu thành công! Vui lòng reload để xem kết quả.")
         else:
@@ -88,21 +97,22 @@ with st.form("update_form"):
 
     if update_btn:
         if "id" in df.columns and update_id in df["id"].astype(str).values:
-            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì dòng 1 là header, index bắt đầu từ 0
-            if new_name_update:
+            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì header ở dòng 1, index bắt đầu từ 0
+            if new_name_update and "name" in df.columns:
                 worksheet.update_cell(row_index, df.columns.get_loc("name")+1, new_name_update)
-            if new_quantity_update:
+            if new_quantity_update and "quantity" in df.columns:
                 worksheet.update_cell(row_index, df.columns.get_loc("quantity")+1, new_quantity_update)
             st.success(f"✅ Đã cập nhật sản phẩm có ID = {update_id}")
         else:
             st.error("❌ Không tìm thấy sản phẩm với ID này.")
 
 # --- 11. Xóa dữ liệu ---
-st.subheader("🗑️ Xóa dữ liệu theo ID")
+st.subheader("🗑️ Xóa dữ liệu")
 
-row_index_str = st.text_input("Nhập số dòng cần xóa:")
+# Xóa theo số dòng
+row_index_str = st.text_input("Nhập số dòng cần xóa (tùy chọn):")
 
-if st.button("Xóa dòng"):
+if st.button("Xóa dòng theo số dòng"):
     try:
         row_index = int(row_index_str)   # ép kiểu về int
         worksheet.delete_rows(row_index)
@@ -111,3 +121,16 @@ if st.button("Xóa dòng"):
         st.error("⚠️ Vui lòng nhập số nguyên hợp lệ!")
     except Exception as e:
         st.error(f"❌ Lỗi khi xóa: {type(e).__name__} - {e}")
+
+# Xóa theo ID
+st.subheader("🗑️ Xóa dữ liệu theo ID")
+
+delete_id = st.text_input("Nhập ID sản phẩm cần xóa:")
+
+if st.button("Xóa theo ID"):
+    if "id" in df.columns and delete_id in df["id"].astype(str).values:
+        row_index = df[df["id"].astype(str) == delete_id].index[0] + 2  # +2 vì header ở dòng 1
+        worksheet.delete_rows(row_index)
+        st.success(f"✅ Đã xóa sản phẩm có ID = {delete_id} (dòng {row_index})")
+    else:
+        st.error("❌ Không tìm thấy sản phẩm với ID này.")
