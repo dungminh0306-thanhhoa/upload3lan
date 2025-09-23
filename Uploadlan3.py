@@ -97,7 +97,7 @@ with st.form("update_form"):
 
     if update_btn:
         if "id" in df.columns and update_id in df["id"].astype(str).values:
-            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì header ở dòng 1, index bắt đầu từ 0
+            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì header ở dòng 1
             if new_name_update and "name" in df.columns:
                 worksheet.update_cell(row_index, df.columns.get_loc("name")+1, new_name_update)
             if new_quantity_update and "quantity" in df.columns:
@@ -106,23 +106,7 @@ with st.form("update_form"):
         else:
             st.error("❌ Không tìm thấy sản phẩm với ID này.")
 
-# --- 11. Xóa dữ liệu ---
-st.subheader("🗑️ Xóa dữ liệu")
-
-# Xóa theo số dòng
-row_index_str = st.text_input("Nhập số dòng cần xóa (tùy chọn):")
-
-if st.button("Xóa dòng theo số dòng"):
-    try:
-        row_index = int(row_index_str)   # ép kiểu về int
-        worksheet.delete_rows(row_index)
-        st.success(f"✅ Đã xóa dòng {row_index}")
-    except ValueError:
-        st.error("⚠️ Vui lòng nhập số nguyên hợp lệ!")
-    except Exception as e:
-        st.error(f"❌ Lỗi khi xóa: {type(e).__name__} - {e}")
-
-# Xóa theo ID
+# --- 11. Xóa dữ liệu theo ID ---
 st.subheader("🗑️ Xóa dữ liệu theo ID")
 
 delete_id = st.text_input("Nhập ID sản phẩm cần xóa:")
