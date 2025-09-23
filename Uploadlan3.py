@@ -100,14 +100,14 @@ with st.form("update_form"):
 # --- 11. Xóa dữ liệu ---
 st.subheader("🗑️ Xóa dữ liệu theo ID")
 
-with st.form("delete_form"):
-    delete_id = st.text_input("Nhập ID sản phẩm cần xóa")
-    delete_btn = st.form_submit_button("Xóa")
+row_index_str = st.text_input("Nhập số dòng cần xóa:")
 
-    if delete_btn:
-        if "id" in df.columns and delete_id in df["id"].astype(str).values:
-            row_index = df[df["id"].astype(str) == delete_id].index[0] + 2
-            worksheet.delete_rows(row_index)
-            st.success(f"✅ Đã xóa sản phẩm có ID = {delete_id}")
-        else:
-            st.error("❌ Không tìm thấy sản phẩm với ID này.")
+if st.button("Xóa dòng"):
+    try:
+        row_index = int(row_index_str)   # ép kiểu về int
+        worksheet.delete_rows(row_index)
+        st.success(f"✅ Đã xóa dòng {row_index}")
+    except ValueError:
+        st.error("⚠️ Vui lòng nhập số nguyên hợp lệ!")
+    except Exception as e:
+        st.error(f"❌ Lỗi khi xóa: {type(e).__name__} - {e}")
