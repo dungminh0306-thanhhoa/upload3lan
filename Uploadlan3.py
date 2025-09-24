@@ -44,7 +44,7 @@ if "image" in df.columns:
     st.subheader("🖼️ Hình ảnh minh hoạ")
     for idx, row in df.iterrows():
         img_url = row.get("image")
-        id = row.get("id", "")
+        name = row.get("name", "")
         if img_url:
             # Xử lý link Google Drive thành link trực tiếp
             if "drive.google.com" in img_url:
@@ -62,9 +62,10 @@ if "image" in df.columns:
                 response = requests.get(img_url)
                 response.raise_for_status()
                 image = Image.open(BytesIO(response.content))
-                st.image(image, caption=id;, width=200)  # 👈 chỉnh size ảnh ở đây
+                st.image(image, caption=name, width=200)  # 👈 chỉnh size ảnh ở đây
             except Exception as e:
                 st.warning(f"⚠️ Không tải được ảnh cho {name}: {e}")
+
 
 # --- 8. Tìm kiếm nhanh ---
 st.subheader("🔎 Tìm kiếm")
