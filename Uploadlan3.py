@@ -27,12 +27,21 @@ sheet_names = [ws.title for ws in worksheets]
 selected_sheet = st.sidebar.selectbox("Chọn sheet để xem:", sheet_names)
 worksheet = spreadsheet.worksheet(selected_sheet)
 
-# --- 5. Đọc dữ liệu ---
-records = worksheet.get_all_records()
-df = pd.DataFrame(records)
-
-# Chuyển toàn bộ header về chữ thường để thao tác thống nhất
-df.columns = [c.lower() for c in df.columns]
+# --- 5. Đọc dữ liệu (an toàn) ---
+try:
+    records = worksheet.get_all_records()
+    df = pd.DataFrame(records)
+except Exception as e:
+    st.warning(f"⚠️ Lỗi get_all_records(): {type(e).__name__} – chuyển sang get_all_values()")
+    values = worksheet.get_all_values()
+    if values:
+        header = values[0]
+        data = values[1:]
+        # Chuẩn hóa header
+        header = [h.strip().lower() if h else f"col_{i}" for i, h in enumerate(header)]
+        df = pd.DataFrame(data, columns=header)
+    else:
+        df = pd.DataFrame()
 
 # --- 6. Hiển thị dữ liệu ---
 st.title("🔍 Quản lý dữ liệu Google Sheets")
@@ -73,13 +82,11 @@ with st.form("add_row_form"):
 
     if submitted:
         if len(df.columns) > 0:
-            # Tạo dict dữ liệu mới
             new_data = {
                 "id": new_id,
                 "name": new_name,
                 "quantity": new_quantity
             }
-            # Tạo dòng mới đúng thứ tự cột hiện có
             new_row = [new_data.get(col, "") for col in df.columns]
             worksheet.append_row(new_row)
             st.success("✅ Đã thêm dữ liệu thành công! Vui lòng reload để xem kết quả.")
@@ -113,7 +120,7 @@ delete_id = st.text_input("Nhập ID sản phẩm cần xóa:")
 
 if st.button("Xóa theo ID"):
     if "id" in df.columns and delete_id in df["id"].astype(str).values:
-        row_index = df[df["id"].astype(str) == delete_id].index[0] + 2  # +2 vì header ở dòng 1
+        row_index = df[df["id"].astype(str) == delete_id].index[0] + 2
         worksheet.delete_rows(row_index)
         st.success(f"✅ Đã xóa sản phẩm có ID = {delete_id} (dòng {row_index})")
     else:
