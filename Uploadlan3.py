@@ -37,20 +37,28 @@ st.subheader(f"Sheet đang xem: **{selected_sheet}**")
 st.dataframe(df)
 
 # --- 7. Hiển thị ảnh (nếu có cột image) ---
+def convert_drive_link(url: str) -> str:
+    """Chuyển link Google Drive thành direct link"""
+    if "drive.google.com" in url:
+        if "/file/d/" in url:
+            file_id = url.split("/file/d/")[1].split("/")[0]
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
+        elif "id=" in url:
+            file_id = url.split("id=")[1].split("&")[0]
+            return f"https://drive.google.com/uc?export=view&id={file_id}"
+    return url  # Nếu không phải link Drive thì giữ nguyên
+
 if "image" in df.columns:
     st.subheader("🖼️ Hình ảnh minh hoạ")
     for idx, row in df.iterrows():
-        img_url = row.get("image")
+        img_url = str(row.get("image", "")).strip()
         name = row.get("name", f"Ảnh {idx+1}")
         if img_url:
-            # Nếu là link Google Drive -> chuyển sang direct link
-            if "drive.google.com" in img_url and "/file/d/" in img_url:
-                file_id = img_url.split("/file/d/")[1].split("/")[0]
-                img_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            fixed_url = convert_drive_link(img_url)
             try:
-                st.image(img_url, caption=name, width=200)
-            except Exception:
-                st.write(f"❌ Không thể tải ảnh: {img_url}")
+                st.image(fixed_url, caption=name, width=200)
+            except Exception as e:
+                st.error(f"❌ Không thể tải ảnh từ: {fixed_url}\nLỗi: {e}")
 
 # --- 8. Tìm kiếm nhanh ---
 st.subheader("🔎 Tìm kiếm")
@@ -77,7 +85,6 @@ with st.form("add_row_form"):
 
     if submitted:
         if len(df.columns) > 0:
-            # Chuẩn bị dòng dữ liệu mới, đủ số cột
             new_row = [new_id, new_name, new_quantity] + [""] * (len(df.columns) - 3)
             worksheet.append_row(new_row)
             st.success("✅ Đã thêm dữ liệu thành công! Vui lòng reload để xem kết quả.")
@@ -95,7 +102,7 @@ with st.form("update_form"):
 
     if update_btn:
         if "id" in df.columns and update_id in df["id"].astype(str).values:
-            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì dòng 1 là header, index bắt đầu từ 0
+            row_index = df[df["id"].astype(str) == update_id].index[0] + 2
             if new_name_update:
                 worksheet.update_cell(row_index, df.columns.get_loc("name")+1, new_name_update)
             if new_quantity_update:
