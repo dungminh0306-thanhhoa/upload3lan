@@ -28,7 +28,7 @@ selected_sheet = st.sidebar.selectbox("Chọn sheet để xem:", sheet_names)
 worksheet = spreadsheet.worksheet(selected_sheet)
 
 # --- 5. Đọc dữ liệu ---
-records = worksheet.get_all_records(head=1)  # dòng 1 là header
+records = worksheet.get_all_records()
 df = pd.DataFrame(records)
 
 # --- 6. Hiển thị dữ liệu ---
@@ -36,7 +36,9 @@ st.title("🔍 Quản lý dữ liệu Google Sheets")
 st.subheader(f"Sheet đang xem: **{selected_sheet}**")
 st.dataframe(df)
 
-# --- 7. Hiển thị ảnh ---
+# --- 7. Hiển thị ảnh (tìm cột phù hợp) ---
+possible_img_cols = [c for c in df.columns if c.lower() in ["image", "img", "hình", "hinh"]]
+
 if possible_img_cols:
     img_col = possible_img_cols[0]
     st.subheader("🖼️ Hình ảnh minh hoạ")
@@ -49,7 +51,7 @@ if possible_img_cols:
         if not img_url or not img_url.startswith("http"):
             continue
 
-        # Nếu là link Google Drive thì đổi sang direct link
+        # Nếu là link Google Drive thì chuyển sang direct link
         if "drive.google.com/file/d/" in img_url:
             try:
                 file_id = img_url.split("/d/")[1].split("/")[0]
@@ -89,13 +91,8 @@ with st.form("add_row_form"):
 
     if submitted:
         if len(df.columns) > 0:
-            # Chuẩn bị dòng dữ liệu mới, căn theo số cột header
-            new_row_dict = {
-                "id": new_id,
-                "name": new_name,
-                "quantity": new_quantity
-            }
-            new_row = [new_row_dict.get(col, "") for col in df.columns]
+            # Chuẩn bị dòng dữ liệu mới, đủ số cột
+            new_row = [new_id, new_name, new_quantity] + [""] * (len(df.columns) - 3)
             worksheet.append_row(new_row)
             st.success("✅ Đã thêm dữ liệu thành công! Vui lòng reload để xem kết quả.")
         else:
@@ -112,11 +109,11 @@ with st.form("update_form"):
 
     if update_btn:
         if "id" in df.columns and update_id in df["id"].astype(str).values:
-            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì dòng 1 là header
+            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì dòng 1 là header, index bắt đầu từ 0
             if new_name_update:
-                worksheet.update_cell(row_index, df.columns.get_loc("name") + 1, new_name_update)
+                worksheet.update_cell(row_index, df.columns.get_loc("name")+1, new_name_update)
             if new_quantity_update:
-                worksheet.update_cell(row_index, df.columns.get_loc("quantity") + 1, new_quantity_update)
+                worksheet.update_cell(row_index, df.columns.get_loc("quantity")+1, new_quantity_update)
             st.success(f"✅ Đã cập nhật sản phẩm có ID = {update_id}")
         else:
             st.error("❌ Không tìm thấy sản phẩm với ID này.")
