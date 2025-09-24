@@ -27,34 +27,34 @@ sheet_names = [ws.title for ws in worksheets]
 selected_sheet = st.sidebar.selectbox("Chọn sheet để xem:", sheet_names)
 worksheet = spreadsheet.worksheet(selected_sheet)
 
-# --- 5. Đọc dữ liệu (an toàn) ---
-try:
-    records = worksheet.get_all_records()
-    df = pd.DataFrame(records)
-except Exception as e:
-    st.warning(f"⚠️ Lỗi get_all_records(): {type(e).__name__} – chuyển sang get_all_values()")
-    values = worksheet.get_all_values()
-    if values:
-        header = values[0]
-        data = values[1:]
-        # Chuẩn hóa header
-        header = [h.strip().lower() if h else f"col_{i}" for i, h in enumerate(header)]
-        df = pd.DataFrame(data, columns=header)
-    else:
-        df = pd.DataFrame()
+# --- 5. Đọc dữ liệu ---
+records = worksheet.get_all_records(head=1)  # dòng 1 luôn là tiêu đề
+df = pd.DataFrame(records)
 
 # --- 6. Hiển thị dữ liệu ---
 st.title("🔍 Quản lý dữ liệu Google Sheets")
 st.subheader(f"Sheet đang xem: **{selected_sheet}**")
 st.dataframe(df)
 
-# --- 7. Hiển thị ảnh (nếu có cột image) ---
-if "image" in df.columns:
-    st.subheader("Hình ảnh minh hoạ")
+# --- 7. Hiển thị ảnh (tự động nhận diện cột ảnh) ---
+possible_img_cols = [c for c in df.columns if "img" in c.lower() or "image" in c.lower() or "ảnh" in c.lower()]
+
+if possible_img_cols:
+    img_col = possible_img_cols[0]  # lấy cột đầu tiên liên quan đến ảnh
+    st.subheader("🖼️ Hình ảnh minh hoạ")
     for idx, row in df.iterrows():
-        img_url = row.get("image")
-        name = row.get("name", "")
+        img_url = str(row.get(img_col, "")).strip()
+        name = row.get("name", f"Row {idx+2}")
+
         if img_url:
+            # Nếu link Google Drive dạng view -> đổi sang direct link
+            if "drive.google.com/file/d/" in img_url:
+                try:
+                    file_id = img_url.split("/d/")[1].split("/")[0]
+                    img_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+                except Exception:
+                    pass
+            
             st.image(img_url, caption=name, use_column_width=True)
 
 # --- 8. Tìm kiếm nhanh ---
@@ -82,12 +82,8 @@ with st.form("add_row_form"):
 
     if submitted:
         if len(df.columns) > 0:
-            new_data = {
-                "id": new_id,
-                "name": new_name,
-                "quantity": new_quantity
-            }
-            new_row = [new_data.get(col, "") for col in df.columns]
+            # Chuẩn bị dòng dữ liệu mới, đủ số cột
+            new_row = [new_id, new_name, new_quantity] + [""] * (len(df.columns) - 3)
             worksheet.append_row(new_row)
             st.success("✅ Đã thêm dữ liệu thành công! Vui lòng reload để xem kết quả.")
         else:
@@ -104,24 +100,11 @@ with st.form("update_form"):
 
     if update_btn:
         if "id" in df.columns and update_id in df["id"].astype(str).values:
-            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì header ở dòng 1
-            if new_name_update and "name" in df.columns:
+            row_index = df[df["id"].astype(str) == update_id].index[0] + 2  # +2 vì dòng 1 là header
+            if new_name_update:
                 worksheet.update_cell(row_index, df.columns.get_loc("name")+1, new_name_update)
-            if new_quantity_update and "quantity" in df.columns:
+            if new_quantity_update:
                 worksheet.update_cell(row_index, df.columns.get_loc("quantity")+1, new_quantity_update)
             st.success(f"✅ Đã cập nhật sản phẩm có ID = {update_id}")
         else:
             st.error("❌ Không tìm thấy sản phẩm với ID này.")
-
-# --- 11. Xóa dữ liệu theo ID ---
-st.subheader("🗑️ Xóa dữ liệu theo ID")
-
-delete_id = st.text_input("Nhập ID sản phẩm cần xóa:")
-
-if st.button("Xóa theo ID"):
-    if "id" in df.columns and delete_id in df["id"].astype(str).values:
-        row_index = df[df["id"].astype(str) == delete_id].index[0] + 2
-        worksheet.delete_rows(row_index)
-        st.success(f"✅ Đã xóa sản phẩm có ID = {delete_id} (dòng {row_index})")
-    else:
-        st.error("❌ Không tìm thấy sản phẩm với ID này.")
