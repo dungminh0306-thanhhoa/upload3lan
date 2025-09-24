@@ -37,6 +37,7 @@ st.subheader(f"Sheet đang xem: **{selected_sheet}**")
 st.dataframe(df)
 
 # --- 7. Hiển thị ảnh (tìm cột phù hợp) ---
+# --- 7. Hiển thị ảnh (tìm cột phù hợp) ---
 possible_img_cols = [c for c in df.columns if c.lower() in ["image", "img", "hình", "hinh"]]
 
 if possible_img_cols:
@@ -45,10 +46,13 @@ if possible_img_cols:
     for idx, row in df.iterrows():
         img_url = str(row.get(img_col, "")).strip()
         name = str(row.get("name", "")).strip()
+
+        # caption mặc định
         if not name:
             name = f"Dòng {idx+2}"
 
-        if not img_url or not img_url.startswith("http"):
+        # bỏ qua giá trị rỗng hoặc "0" hoặc "nan"
+        if not img_url or img_url in ["0", "nan", "NaN", "None"]:
             continue
 
         # Nếu là link Google Drive thì chuyển sang direct link
@@ -57,14 +61,25 @@ if possible_img_cols:
                 file_id = img_url.split("/d/")[1].split("/")[0]
                 img_url = f"https://drive.google.com/uc?export=view&id={file_id}"
             except Exception:
-                pass
+                continue
 
-        try:
-            st.image(img_url, caption=name, use_container_width=True)
-        except Exception:
-            st.warning(f"⚠️ Không hiển thị được ảnh tại dòng {idx+2}: {img_url}")
+        # Nếu là link dạng open?id= thì cũng xử lý
+        elif "drive.google.com/open?id=" in img_url:
+            try:
+                file_id = img_url.split("open?id=")[1].split("&")[0]
+                img_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+            except Exception:
+                continue
+
+        # Chỉ hiển thị nếu là URL hợp lệ
+        if img_url.startswith("http"):
+            try:
+                st.image(img_url, caption=name, use_container_width=True)
+            except Exception:
+                st.warning(f"⚠️ Không hiển thị được ảnh tại dòng {idx+2}: {img_url}")
 else:
     st.info("📌 Không tìm thấy cột hình ảnh trong sheet.")
+
 
 # --- 8. Tìm kiếm nhanh ---
 st.subheader("🔎 Tìm kiếm")
