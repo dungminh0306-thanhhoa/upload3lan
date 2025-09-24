@@ -55,7 +55,8 @@ if possible_img_cols:
                 except Exception:
                     pass
             
-            st.image(img_url, caption=name, use_column_width=True)
+            st.image(img_url, caption=name, use_container_width=True)
+
 
 # --- 8. Tìm kiếm nhanh ---
 st.subheader("🔎 Tìm kiếm")
