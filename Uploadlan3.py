@@ -37,25 +37,29 @@ st.subheader(f"Sheet đang xem: **{selected_sheet}**")
 st.dataframe(df)
 
 # --- 7. Hiển thị ảnh (tự động nhận diện cột ảnh) ---
-possible_img_cols = [c for c in df.columns if "img" in c.lower() or "image" in c.lower() or "ảnh" in c.lower()]
-
 if possible_img_cols:
-    img_col = possible_img_cols[0]  # lấy cột đầu tiên liên quan đến ảnh
+    img_col = possible_img_cols[0]
     st.subheader("🖼️ Hình ảnh minh hoạ")
     for idx, row in df.iterrows():
         img_url = str(row.get(img_col, "")).strip()
         name = row.get("name", f"Row {idx+2}")
 
-        if img_url:
-            # Nếu link Google Drive dạng view -> đổi sang direct link
-            if "drive.google.com/file/d/" in img_url:
-                try:
-                    file_id = img_url.split("/d/")[1].split("/")[0]
-                    img_url = f"https://drive.google.com/uc?export=view&id={file_id}"
-                except Exception:
-                    pass
-            
+        if not img_url or not img_url.startswith("http"):
+            continue
+
+        # Chuyển link Google Drive từ view link sang direct view
+        if "drive.google.com/file/d/" in img_url:
+            try:
+                file_id = img_url.split("/d/")[1].split("/")[0]
+                img_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+            except Exception:
+                pass
+
+        # Hiển thị ảnh
+        try:
             st.image(img_url, caption=name, use_container_width=True)
+        except Exception as e:
+            st.warning(f"⚠️ Không hiển thị được ảnh tại dòng {idx+2}: {img_url}")
 
 
 # --- 8. Tìm kiếm nhanh ---
