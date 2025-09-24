@@ -44,7 +44,7 @@ if "image" in df.columns:
     st.subheader("🖼️ Hình ảnh minh hoạ")
     for idx, row in df.iterrows():
         img_url = row.get("image")
-        name = row.get("name", "")
+        name = row.get("id", "")
         if img_url:
             # Xử lý link Google Drive thành link trực tiếp
             if "drive.google.com" in img_url:
