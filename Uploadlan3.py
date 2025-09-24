@@ -37,19 +37,19 @@ st.subheader(f"Sheet đang xem: **{selected_sheet}**")
 st.dataframe(df)
 
 # --- 7. Hiển thị ảnh ---
-possible_img_cols = [c for c in df.columns if "img" in c.lower() or "image" in c.lower() or "ảnh" in c.lower()]
-
 if possible_img_cols:
     img_col = possible_img_cols[0]
     st.subheader("🖼️ Hình ảnh minh hoạ")
     for idx, row in df.iterrows():
         img_url = str(row.get(img_col, "")).strip()
-        name = row.get("name", f"Row {idx+2}")
+        name = str(row.get("name", "")).strip()
+        if not name:
+            name = f"Dòng {idx+2}"
 
         if not img_url or not img_url.startswith("http"):
             continue
 
-        # Chuyển link Google Drive về direct link
+        # Nếu là link Google Drive thì đổi sang direct link
         if "drive.google.com/file/d/" in img_url:
             try:
                 file_id = img_url.split("/d/")[1].split("/")[0]
