@@ -62,7 +62,7 @@ if "image" in df.columns:
                 response = requests.get(img_url)
                 response.raise_for_status()
                 image = Image.open(BytesIO(response.content))
-                st.image(image, caption=name;id, width=200)  # 👈 chỉnh size ảnh ở đây
+                st.image(image, caption=id;, width=200)  # 👈 chỉnh size ảnh ở đây
             except Exception as e:
                 st.warning(f"⚠️ Không tải được ảnh cho {name}: {e}")
 
