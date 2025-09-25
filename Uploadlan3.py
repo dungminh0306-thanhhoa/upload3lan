@@ -42,6 +42,9 @@ st.dataframe(df)
 # --- 7. Hiển thị ảnh (nếu có cột image) ---
 if "image" in df.columns:
     st.subheader("🖼️ Hình ảnh minh hoạ")
+    cols = st.columns(3)  # 3 cột trên 1 hàng
+    col_index = 0
+
     for idx, row in df.iterrows():
         img_url = row.get("image")
         name = row.get("name", "")
@@ -62,9 +65,16 @@ if "image" in df.columns:
                 response = requests.get(img_url)
                 response.raise_for_status()
                 image = Image.open(BytesIO(response.content))
-                st.image(image, caption=name, width=200)  # 👈 chỉnh size ảnh ở đây
+                # Hiển thị ảnh trong cột hiện tại
+                with cols[col_index]:
+                    st.image(image, caption=name, use_container_width=True)
             except Exception as e:
-                st.warning(f"⚠️ Không tải được ảnh cho {name}: {e}")
+                with cols[col_index]:
+                    st.warning(f"⚠️ Không tải được ảnh cho {name}: {e}")
+
+        # Chuyển sang cột tiếp theo (0 → 1 → 2 → quay lại 0)
+        col_index = (col_index + 1) % 3
+
 
 
 # --- 8. Tìm kiếm nhanh ---
